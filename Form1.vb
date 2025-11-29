@@ -1,38 +1,77 @@
 ﻿Option Explicit On
 
-Imports System.Runtime.InteropServices
-
 Public Class Form1
+
     ' Declarar las funciones de la API de Windows para el comportamiento del formulario
-    <DllImport("user32.dll")>
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
     Private Shared Function GetForegroundWindow() As IntPtr
     End Function
 
-    <DllImport("user32.dll", SetLastError:=True)>
+    <System.Runtime.InteropServices.DllImport("user32.dll", SetLastError:=True)>
     Private Shared Function GetWindowThreadProcessId(ByVal hWnd As IntPtr, ByRef lpdwProcessId As UInteger) As UInteger
     End Function
 
-    <DllImport("user32.dll")>
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
     Private Shared Function IsIconic(ByVal hWnd As IntPtr) As Boolean
     End Function
 
-    <DllImport("user32.dll")>
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
     Private Shared Function IsZoomed(ByVal hWnd As IntPtr) As Boolean
     End Function
 
-
-
-    Dim oCATIA As CATIA
+    Dim oCATIA As CatiaSession
     Dim oSel As INFITF.Selection
     Dim oSelectedElement As INFITF.SelectedElement
     Dim oSelectedProduct As ProductStructureTypeLib.Product
     Dim seleccion As Boolean = False
     Dim cancelado As Boolean
-    Dim Superficie As Graphics = Me.CreateGraphics
+    Dim Superficie As Graphics
     Dim rect As Rectangle
     Dim folderBrowser As New FolderBrowserDialog
     Dim folderOpened As Boolean
     Dim isComboBoxOpen As Boolean = False
+
+
+    'Dim oFormPercentage As New Form ' instancia un form para hacer el formulario de porcentaje
+    'Dim oFormSelection As New Form
+    Dim oFormFormatter As New FormFormatter ' instacia un objeto de la clase que da formato a los formularios
+
+
+
+
+    Public Sub New()
+        InitializeComponent()
+
+        Me.Text = "BOM - Selection"
+        Me.ShowIcon = False
+        Me.BackColor = Color.FromArgb(255, 241, 213)
+        Me.ShowInTaskbar = False
+        Me.MinimizeBox = False
+        Me.MaximizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.FixedDialog
+
+        Label1.Text = "No Selection"
+        Label1.TextAlign = ContentAlignment.MiddleLeft
+
+        rect = Label1.DisplayRectangle
+
+        folderBrowser = New FolderBrowserDialog()
+    End Sub
+
+
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+        ' Cargar directorios guardados
+        If My.Settings.UltimosDirectorios IsNot Nothing Then
+            ComboBox1.Items.AddRange(My.Settings.UltimosDirectorios.Cast(Of String).ToArray())
+        End If
+
+        ' Crear sesión CATIA (pero NO usar aún)
+        oCATIA = New CatiaSession()
+
+    End Sub
+
+
 
     Private Sub ComboBox1_DropDown(sender As Object, e As EventArgs) Handles ComboBox1.DropDown
         ' Se ejecuta cuando el ComboBox se despliega
@@ -40,30 +79,37 @@ Public Class Form1
     End Sub
 
 
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub Form1_Shown(sender As Object, e As EventArgs) Handles Me.Shown
 
-        ' Cargar los últimos directorios almacenados en My.Settings
-        If My.Settings.UltimosDirectorios IsNot Nothing Then
-
-            ComboBox1.Items.AddRange(My.Settings.UltimosDirectorios.Cast(Of String).ToArray())
-
+        ' Verificar estado de CATIA
+        If oCATIA Is Nothing OrElse oCATIA.Application Is Nothing Then
+            MessageBox.Show("No hay una sesión activa de CATIA.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Me.Close()
+            Return
         End If
 
-        Me.Text = "BOM - Selection"
-        Me.ShowIcon = False
-        Me.BackColor = Color.FromArgb(255, 241, 213)
-        Me.ShowInTaskbar = False
-        Label1.Text = "No Selection"
-        Label1.TextAlign = ContentAlignment.MiddleLeft
+        Select Case oCATIA.Status
+            Case CatiaSessionStatus.NotRunning
+                MessageBox.Show("CATIA no está abierto.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Me.Close()
+                Return
 
+            Case CatiaSessionStatus.NoWindowsOpen
+                MessageBox.Show("CATIA está abierto, pero no hay documentos.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Me.Close()
+                Return
 
-        rect = Label1.DisplayRectangle
+            Case CatiaSessionStatus.Unknown
+                MessageBox.Show("No se pudo determinar el estado de CATIA.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Me.Close()
+                Return
+        End Select
 
-        oCATIA = New CATIA
-
+        ' Si todo OK → empezar selección
         BackgroundWorker1.RunWorkerAsync()
 
     End Sub
+
 
 
 
@@ -124,18 +170,19 @@ Public Class Form1
     End Sub
 
 
-    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+    '*************
+    ' Boton OK
+    '*************
+    'Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+    '    If Label1.Text = "No Selection" Then
+    '        Exit Sub
+    '    Else
+    '        oFormPercentage.Visible = True
+    '        Me.Hide()
+    '    End If
+    'End Sub
 
-        If Label1.Text = "No Selection" Then
-            Exit Sub
-        Else
 
-            Form2.Show()
-
-
-        End If
-
-    End Sub
 
 
     Private Sub Label1_Click(sender As Object, e As EventArgs) Handles Label1.Click
@@ -148,35 +195,29 @@ Public Class Form1
 
     End Sub
 
-    Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+    'Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
 
-        'Si el usuario no llegó a seleccionar algo y aprieta "ESC" entonces no hay que hacer "Undo"
+    '    'Si el usuario no llegó a seleccionar algo y aprieta "ESC" entonces no hay que hacer "Undo"
 
-        If oSel Is Nothing And Label1.Text = "No Selection" Then
+    '    If oSel Is Nothing And Label1.Text = "No Selection" Then
 
-            oCATIA.AppCATIA.StartCommand("Undo")
-            End  ' CUIDADO: aca estoy utilizando "End" / hay que ver como finalizar la applicacion
+    '        oCATIA.Application.StartCommand("Undo")
+    '        End  ' CUIDADO: aca estoy utilizando "End" / hay que ver como finalizar la applicacion
 
-        End If
+    '    End If
 
-        If oSel Is Nothing And Label1.Text <> "No Selection" Then
-            oCATIA.AppCATIA.StartCommand("Undo")
-            Exit Sub
-        End If
-
-
-    End Sub
+    '    If oSel Is Nothing And Label1.Text <> "No Selection" Then
+    '        oCATIA.Application.StartCommand("Undo")
+    '        Exit Sub
+    '    End If
+    'End Sub
 
 
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
 
-
-
         ' esto es una bandera para que el formulario "folderBrowser" no pierda el foco
         folderOpened = True
-
-
 
         ' Mostrar el diálogo y verificar si se seleccionó una carpeta
         If folderBrowser.ShowDialog() = DialogResult.OK Then
@@ -209,88 +250,175 @@ Public Class Form1
 
         End If
 
-
     End Sub
 
+
+    '**************
+    ' Boton CANCEL
+    '**************
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
 
         ' Si el usuario no llegó a seleccionar algo y aprieta "ESC" entonces no hay que hacer "Undo"
 
         If oSel Is Nothing Then
-            oCATIA.AppCATIA.StartCommand("Undo")
+            oCATIA.Application.StartCommand("Undo")
         Else
-            End  ' CUIDADO: aca estoy utilizando "End"
+            ' End  ' CUIDADO: aca estoy utilizando "End"
         End If
 
     End Sub
 
-
-    '**************************************************************************
-    ' Esto que sigue a continuacion es para el comportamiento del formulario.
-    ' Si CATIA tiene el foco, entonces el fomulario es Topmost
-    ' Si CATIA se minimiza entonces el formulario se minimiza
-    ' Si CATIA se maximiza entonces el fomulario aparece
-    '**************************************************************************
-
-    ' Temporizador para verificar periódicamente la ventana activa
-    Private WithEvents CheckForegroundAppTimer As Timer
-    Public Sub New()
-        ' Inicializar el formulario
-        InitializeComponent()
-
-
-        ' Configurar el temporizador / Verificar cada 1 segundo
-        CheckForegroundAppTimer = New Timer With {
-            .Interval = 100
-            }
-        CheckForegroundAppTimer.Start()
+    Private Sub GroupBox1_Enter(sender As Object, e As EventArgs) Handles GroupBox1.Enter
 
     End Sub
 
-    ' Evento que se ejecuta cada vez que el temporizador hace tick
-    Private Sub CheckForegroundApp(sender As Object, e As EventArgs) Handles CheckForegroundAppTimer.Tick
-        ' Obtener la ventana en primer plano
-        Dim hwnd As IntPtr = GetForegroundWindow()
-        Dim processID As UInteger
-        GetWindowThreadProcessId(hwnd, processID)
-
-        ' Obtener el proceso en primer plano
-        Dim foregroundProcess As Process = Process.GetProcessById(CInt(processID))
 
 
-        ' Si se está mostrando el formulario de progreso, entonces que no siga con lo demas
-        If Form2.Visible = True Then
-            Exit Sub
-        End If
 
 
-        ' Si si está mostrando el formulario de folderBrowser entonces que no siga con lo demas
-        If folderOpened Then
-            Exit Sub
-        End If
+    'Public Sub New()
 
-        If isComboBoxOpen = True Then
-            Exit Sub
-        End If
+    '    ' Genera todos los controles (botones, labels, etc.)
+    '    InitializeComponent()
 
-        ' Comparar con el nombre del proceso de la aplicación deseada (por ejemplo "notepad")
-        If foregroundProcess.ProcessName.ToLower() = "cnext" Or foregroundProcess.ProcessName.ToLower() = "catiaselection" Then
-            ' La aplicación tiene el foco, mostrar el formulario y hacerlo TopMost
-            Me.TopMost = True
-            Me.Show()
 
-            ' Verificar si la aplicación está minimizada
-            If IsIconic(hwnd) Then
-                Me.WindowState = FormWindowState.Minimized ' Minimizar el formulario
-            Else
-                Me.WindowState = FormWindowState.Normal ' Restaurar el formulario si no está minimizada
-            End If
-        Else
-            ' Si la aplicación no tiene el foco
-            Me.TopMost = False ' No es TopMost
-            Me.Hide() ' Ocultar el formulario
-        End If
-    End Sub
+    '    'oFormFormatter.GiveSelectionFormat(oFormSelection)
+
+    '    'oFormSelection.Show()
+
+    '    ' Toma una instancia de la clase Form y le da formato de progressBar
+    '    'oFormFormatter.GiveProgressBarFormat(oFormPercentage)
+
+    'End Sub
 
 
 End Class
+
+
+
+
+''**************************************************************************
+'' Esto que sigue a continuacion es para el comportamiento del formulario.
+'' Si CATIA tiene el foco, entonces el fomulario es Topmost
+'' Si CATIA se minimiza entonces el formulario se minimiza
+'' Si CATIA se maximiza entonces el fomulario aparece
+''**************************************************************************
+
+'' Temporizador para verificar periódicamente la ventana activa
+'Private WithEvents CheckForegroundAppTimer As Timer
+
+
+'Public Sub New()
+
+'    ' Inicializar el formulario
+'    InitializeComponent()
+
+
+'    oFormFormatter.GiveSelectionFormat(oFormSelection)
+
+
+'    'oFormSelection.Show()
+
+
+'    ' Toma una instancia de la case Form y le da formato de progressBar
+'    oFormFormatter.GiveProgressBarFormat(oFormPercentage)
+
+
+'    ' Configurar el temporizador / Verificar cada 100ms
+'    'CheckForegroundAppTimer = New Timer With {
+'    '    .Interval = 100
+'    '    }
+'    'CheckForegroundAppTimer.Start()
+
+'End Sub
+
+
+
+
+
+''*********************************************************************************************
+'' Comparar con el nombre del proceso de la aplicación CNEXT
+'' si catia tiene el foco, o si se ha hecho la llamada a la funcion de seleccion,
+'' entonces que el formulario sea topmost y se muestre
+'If foregroundProcess.ProcessName.ToLower() = "cnext" Or foregroundProcess.ProcessName.ToLower() = "catiaselection" Then
+'    Me.TopMost = True
+'    Me.Show()
+'    ' Verificar si la aplicación está minimizada
+'    If IsIconic(hwnd) Then
+'        Me.WindowState = FormWindowState.Minimized ' Minimizar el formulario
+'    Else
+'        Me.WindowState = FormWindowState.Normal ' Restaurar el formulario si no está minimizada
+'    End If
+'Else
+'    ' Si la aplicación no tiene el foco
+'    Me.TopMost = False ' No es TopMost
+'    Me.Hide() ' Ocultar el formulario
+'End If
+''****************************************************************************************************
+
+
+
+
+
+''************************************************************************************************
+'' Comportamiento de maximizado y minimizado del formulario de porcentaje
+'If oFormPercentage.Visible = True Then
+
+'    Exit Sub
+'    '    If foregroundProcess.ProcessName.ToLower() = "cnext" Or foregroundProcess.ProcessName.ToLower() = "catiaselection" Then
+
+'    '        ' Verificar si la aplicación está minimizada
+'    '        If IsIconic(hwnd) Then
+'    '            oFormPercentage.WindowState = FormWindowState.Minimized ' Minimizar el formulario
+'    '            ' oFormPercentage.TopMost = False
+'    '            ' oFormPercentage.Visible = False
+'    '            Exit Sub
+'    '        Else
+'    '            oFormPercentage.WindowState = FormWindowState.Normal ' Restaurar el formulario si no está minimizada
+'    '            oFormPercentage.TopMost = True
+'    '            oFormPercentage.Visible = True
+'    '            Exit Sub
+'    '        End If
+'    '    Else
+'    '        ' Si la aplicación no tiene el foco
+'    '        oFormPercentage.TopMost = False
+'    '        oFormPercentage.Visible = False
+'    '        Exit Sub
+
+'    '    End If
+
+'End If
+''********************************************************************************************************
+
+
+
+
+
+'' Evento que se ejecuta cada vez que el temporizador hace tick
+'Private Sub CheckForegroundApp(sender As Object, e As EventArgs) Handles CheckForegroundAppTimer.Tick
+
+'    Dim hwnd As IntPtr = GetForegroundWindow()   ' Obtener la ventana en primer plano
+'    Dim processID As UInteger
+'    GetWindowThreadProcessId(hwnd, processID)
+'    Dim foregroundProcess As Process = Process.GetProcessById(CInt(processID))  ' Obtener el proceso en primer plano
+
+
+'    ' Si si está mostrando el formulario de folderBrowser entonces que no siga con lo demas
+'    If folderOpened Then
+'        Exit Sub
+'    End If
+
+
+
+
+'    ' Si está desplegado el combobox, entonces que no siga
+'    If isComboBoxOpen = True Then
+'        Exit Sub
+'    End If
+
+
+
+
+
+
+'End Sub

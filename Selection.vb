@@ -39,10 +39,10 @@
     ' Locales     : 
     ' OBS         : 
     ' *********************************************************************************
-    Public Function SingleSelection2(oCATIA As CATIA) As INFITF.Selection
+    Public Function SingleSelection2(oCATIA As CatiaSession) As INFITF.Selection
 
         Dim oDocumentSelected As INFITF.Document
-        Dim oAppCATIA As INFITF.Application = oCATIA.AppCATIA
+        Dim oAppCATIA As INFITF.Application = oCATIA.Application
         Dim oActiveDocu As INFITF.Document = oAppCATIA.ActiveDocument
         Dim strObjectType As String = "Product"  ' Se indica el tipo que se quiere seleccionar
 
