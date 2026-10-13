@@ -40,6 +40,7 @@ Public Class Form1
 
 
     Public Sub New()
+
         InitializeComponent()
 
         Me.Text = "BOM - Selection"
@@ -88,24 +89,6 @@ Public Class Form1
             Return
         End If
 
-        Select Case oCATIA.Status
-            Case CatiaSessionStatus.NotRunning
-                MessageBox.Show("CATIA no está abierto.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Me.Close()
-                Return
-
-            Case CatiaSessionStatus.NoWindowsOpen
-                MessageBox.Show("CATIA está abierto, pero no hay documentos.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Me.Close()
-                Return
-
-            Case CatiaSessionStatus.Unknown
-                MessageBox.Show("No se pudo determinar el estado de CATIA.", "CATIA", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Me.Close()
-                Return
-        End Select
-
-        ' Si todo OK → empezar selección
         BackgroundWorker1.RunWorkerAsync()
 
     End Sub
@@ -267,11 +250,6 @@ Public Class Form1
         End If
 
     End Sub
-
-    Private Sub GroupBox1_Enter(sender As Object, e As EventArgs) Handles GroupBox1.Enter
-
-    End Sub
-
 
 
 

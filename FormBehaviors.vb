@@ -3,8 +3,6 @@
     ' FormBehavior → se encarga de inyectar lógica, handlers, timers y APIs externas.
     ' *******************************************************************************
 
-
-
     Public Sub GiveFormBehaviors(form As Form)
         ' Atributos del formulario
         With form

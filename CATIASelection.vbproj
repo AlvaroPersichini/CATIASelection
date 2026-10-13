@@ -110,7 +110,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CAT.vb" />
+    <Compile Include="CatiaSession.vb" />
     <Compile Include="FormBehaviors.vb" />
     <Compile Include="FormFormatter.vb" />
     <Compile Include="Form1.vb">
@@ -126,9 +126,6 @@
     <Compile Include="Form2.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ICATIA.vb" />
-    <Compile Include="CATIA2.vb" />
-    <Compile Include="CATIA22_1.vb" />
     <Compile Include="Selection.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
