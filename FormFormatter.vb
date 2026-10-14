@@ -7,17 +7,17 @@
 
         ' form
         With form
-            .AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
+            .AutoScaleDimensions = New SizeF(6.0!, 13.0!)
             .AllowDrop = True
-            .AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-            .BackColor = System.Drawing.SystemColors.Control
-            .ClientSize = New System.Drawing.Size(357, 225)
+            .AutoScaleMode = AutoScaleMode.Font
+            .BackColor = SystemColors.Control
+            .ClientSize = New Size(357, 225)
             .Name = "Form1"
             .Text = "Form1"
             .Text = "BOM - Selection "
             .ShowIcon = False
             .BackColor = Color.FromArgb(255, 241, 213)
-            .Size = New System.Drawing.Size(373, 264)
+            .Size = New Size(373, 264)
             .MinimizeBox = False
             .MaximizeBox = False
             .FormBorderStyle = FormBorderStyle.FixedDialog

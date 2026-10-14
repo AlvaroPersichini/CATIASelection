@@ -2,22 +2,6 @@
 
 Public Class Form1
 
-    ' Declarar las funciones de la API de Windows para el comportamiento del formulario
-    <System.Runtime.InteropServices.DllImport("user32.dll")>
-    Private Shared Function GetForegroundWindow() As IntPtr
-    End Function
-
-    <System.Runtime.InteropServices.DllImport("user32.dll", SetLastError:=True)>
-    Private Shared Function GetWindowThreadProcessId(ByVal hWnd As IntPtr, ByRef lpdwProcessId As UInteger) As UInteger
-    End Function
-
-    <System.Runtime.InteropServices.DllImport("user32.dll")>
-    Private Shared Function IsIconic(ByVal hWnd As IntPtr) As Boolean
-    End Function
-
-    <System.Runtime.InteropServices.DllImport("user32.dll")>
-    Private Shared Function IsZoomed(ByVal hWnd As IntPtr) As Boolean
-    End Function
 
     Dim oCATIA As CatiaSession
     Dim oSel As INFITF.Selection
@@ -30,6 +14,8 @@ Public Class Form1
     Dim folderBrowser As New FolderBrowserDialog
     Dim folderOpened As Boolean
     Dim isComboBoxOpen As Boolean = False
+
+
 
 
     'Dim oFormPercentage As New Form ' instancia un form para hacer el formulario de porcentaje
@@ -118,7 +104,6 @@ Public Class Form1
 
         If oSel Is Nothing Then
 
-
             cancelado = True ' es una bandera para otro subprocesos
 
             End  ' CUIDADO: aca estoy utilizando "End" / hay que ver como finalizar la applicacion
@@ -156,14 +141,16 @@ Public Class Form1
     '*************
     ' Boton OK
     '*************
-    'Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-    '    If Label1.Text = "No Selection" Then
-    '        Exit Sub
-    '    Else
-    '        oFormPercentage.Visible = True
-    '        Me.Hide()
-    '    End If
-    'End Sub
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        If Label1.Text = "No Selection" Then
+
+            Exit Sub
+        Else
+            'Form2.Visible = True
+            'Me.Hide()
+            MsgBox(Label1.Text)
+        End If
+    End Sub
 
 
 
